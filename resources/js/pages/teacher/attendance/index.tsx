@@ -32,6 +32,12 @@ interface SectionOption {
     year_level_name: string;
 }
 
+interface SubjectOption {
+    id: number;
+    name: string;
+    code: string;
+}
+
 interface StudentItem {
     id: number;
     student_id: string;
@@ -48,9 +54,11 @@ interface AttendanceRecord {
 
 type PageProps = {
     sections: SectionOption[];
+    subjects: SubjectOption[];
     students: StudentItem[];
     attendanceRecords: Record<string, AttendanceRecord>;
     selectedSectionId: number | null;
+    selectedSubjectId: number | null;
     selectedDate: string;
     activeSchoolYear: string | null;
     monthlySummary: Record<string, number>;
@@ -73,9 +81,11 @@ const statusKeys = Object.keys(statusConfig) as AttendanceStatus[];
 export default function TeacherAttendance() {
     const {
         sections,
+        subjects,
         students,
         attendanceRecords,
         selectedSectionId,
+        selectedSubjectId,
         selectedDate,
         activeSchoolYear,
         monthlySummary,
@@ -107,11 +117,17 @@ export default function TeacherAttendance() {
         });
     };
 
+    const handleSubjectChange = (value: string) => {
+        router.get('/teacher/attendance', { section_id: selectedSectionId, subject_id: value, date: selectedDate }, {
+            preserveState: false,
+        });
+    };
+
     const handleDateChange = (date: Date | undefined) => {
-        if (date && selectedSectionId) {
+        if (date && selectedSectionId && selectedSubjectId) {
             const dateStr = date.toLocaleDateString('en-CA');
             setCalendarOpen(false);
-            router.get('/teacher/attendance', { section_id: selectedSectionId, date: dateStr }, {
+            router.get('/teacher/attendance', { section_id: selectedSectionId, subject_id: selectedSubjectId, date: dateStr }, {
                 preserveState: false,
             });
         }
@@ -142,7 +158,7 @@ export default function TeacherAttendance() {
     };
 
     const handleSave = () => {
-        if (!selectedSectionId) return;
+        if (!selectedSectionId || !selectedSubjectId) return;
 
         // Only save students that have a status selected
         const entries = students
@@ -157,6 +173,7 @@ export default function TeacherAttendance() {
 
         const data = {
             section_id: selectedSectionId,
+            subject_id: selectedSubjectId,
             date: selectedDate,
             attendance: entries,
         };
@@ -226,6 +243,25 @@ export default function TeacherAttendance() {
                                     </SelectContent>
                                 </Select>
                             </div>
+                            <div className="flex-1 space-y-2">
+                                <Label>Subject</Label>
+                                <Select
+                                    value={selectedSubjectId?.toString() ?? ''}
+                                    onValueChange={handleSubjectChange}
+                                    disabled={!selectedSectionId}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a subject..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {subjects.map((s) => (
+                                            <SelectItem key={s.id} value={s.id.toString()}>
+                                                {s.name} ({s.code})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             <div className="w-full space-y-2 sm:w-auto">
                                 <Label>Date</Label>
                                 <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -233,7 +269,7 @@ export default function TeacherAttendance() {
                                         <Button
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal sm:w-52"
-                                            disabled={!selectedSectionId}
+                                            disabled={!selectedSectionId || !selectedSubjectId}
                                         >
                                             <CalendarIcon className="mr-2 size-4" />
                                             {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-PH', {
@@ -276,17 +312,21 @@ export default function TeacherAttendance() {
                 </Card>
 
                 {/* No section selected */}
-                {!selectedSectionId && (
+                {(!selectedSectionId || !selectedSubjectId) && (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
                             <CalendarCheck className="size-10 text-muted-foreground" />
-                            <p className="text-muted-foreground">Select a section to take attendance.</p>
+                            <p className="text-muted-foreground">
+                                {!selectedSectionId
+                                    ? 'Select a section to take attendance.'
+                                    : 'Select a subject to take attendance.'}
+                            </p>
                         </CardContent>
                     </Card>
                 )}
 
                 {/* Attendance form */}
-                {selectedSectionId && students.length > 0 && (
+                {selectedSectionId && selectedSubjectId && students.length > 0 && (
                     <>
                         {/* Summary Cards */}
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -401,7 +441,7 @@ export default function TeacherAttendance() {
                 )}
 
                 {/* Section selected but no students */}
-                {selectedSectionId && students.length === 0 && (
+                {selectedSectionId && selectedSubjectId && students.length === 0 && (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
                             <UserX className="size-10 text-muted-foreground" />

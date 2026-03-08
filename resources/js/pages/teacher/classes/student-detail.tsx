@@ -61,6 +61,7 @@ interface AttendanceRecord {
     date: string;
     status: string;
     remarks: string | null;
+    subject_name: string;
 }
 
 interface SubjectGrade {
@@ -380,6 +381,7 @@ export default function TeacherClassStudentDetail() {
                                                     <TableRow>
                                                         <TableHead className="w-10 text-center">#</TableHead>
                                                         <TableHead className="min-w-[120px]">Date</TableHead>
+                                                        <TableHead>Subject</TableHead>
                                                         <TableHead className="w-24 text-center">Status</TableHead>
                                                         <TableHead>Remarks</TableHead>
                                                     </TableRow>
@@ -396,6 +398,7 @@ export default function TeacherClassStudentDetail() {
                                                                     day: 'numeric',
                                                                 })}
                                                             </TableCell>
+                                                            <TableCell>{record.subject_name}</TableCell>
                                                             <TableCell className="text-center">
                                                                 <Badge variant={statusColors[record.status] ?? 'default'}>
                                                                     {record.status}

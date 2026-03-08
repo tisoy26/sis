@@ -138,6 +138,12 @@ class DashboardController extends Controller
                 ])->values(),
                 'sectionEnrollments' => $sectionEnrollments,
                 'recentEnrollments' => $recentEnrollments,
+                'enrollmentTrend' => SchoolYear::orderBy('start_date')
+                    ->get()
+                    ->map(fn ($sy) => [
+                        'name' => $sy->name,
+                        'value' => Enrollment::where('school_year_id', $sy->id)->count(),
+                    ]),
             ];
         }
 

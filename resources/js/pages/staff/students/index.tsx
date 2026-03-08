@@ -69,7 +69,7 @@ export default function StudentIndex() {
         gender: 'male' as 'male' | 'female',
         birth_date: '',
         contact_number: '',
-        status: '' as string,
+        status: 'inactive' as string,
         ...emptyAddress,
         // Parent / Guardian
         father_first_name: '',
@@ -461,9 +461,8 @@ export default function StudentIndex() {
                                         />
                                     </div>
 
-                                    {/* Status (edit only) */}
-                                    {editing && (
-                                        <div className="space-y-2">
+                                    {/* Status */}
+                                    <div className="space-y-2">
                                             <Label htmlFor="status">Status</Label>
                                             <Select value={form.data.status} onValueChange={(v) => form.setData('status', v)}>
                                                 <SelectTrigger id="status">
@@ -476,8 +475,7 @@ export default function StudentIndex() {
                                                     <SelectItem value="transferred">Transferred</SelectItem>
                                                 </SelectContent>
                                             </Select>
-                                        </div>
-                                    )}
+                                    </div>
                                 </>
                             )}
 

@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Enrollment;
 use App\Models\SchoolYear;
 use App\Models\Section;
+use App\Models\Subject;
 use App\Models\TeacherAssignment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,10 +26,12 @@ class AttendanceController extends Controller
         $activeSchoolYear = SchoolYear::where('status', 'active')->first();
 
         $sections = collect();
+        $subjects = collect();
         $students = collect();
         $attendanceRecords = [];
         $selectedDate = $request->get('date', now()->toDateString());
         $selectedSectionId = $request->get('section_id');
+        $selectedSubjectId = $request->get('subject_id');
 
         if ($activeSchoolYear) {
             // Get teacher's assigned sections
@@ -47,49 +50,68 @@ class AttendanceController extends Controller
                     'year_level_name' => $s->yearLevel?->name ?? '—',
                 ]);
 
-            // If a section is selected, load students and their attendance
+            // If a section is selected, load subjects assigned to teacher for that section
             if ($selectedSectionId && $sectionIds->contains($selectedSectionId)) {
-                $enrollments = Enrollment::with('student')
+                $subjectIds = TeacherAssignment::where('teacher_id', $teacher->id)
+                    ->where('school_year_id', $activeSchoolYear->id)
                     ->where('section_id', $selectedSectionId)
-                    ->where('school_year_id', $activeSchoolYear->id)
-                    ->where('status', 'enrolled')
-                    ->get();
+                    ->pluck('subject_id');
 
-                $students = $enrollments->map(fn ($e) => [
-                    'id' => $e->student->id,
-                    'student_id' => $e->student->student_id,
-                    'full_name' => $e->student->full_name,
-                    'gender' => $e->student->gender,
-                ])->sortBy('full_name')->values();
-
-                // Load existing attendance for the selected date
-                $existing = Attendance::where('section_id', $selectedSectionId)
-                    ->where('school_year_id', $activeSchoolYear->id)
-                    ->where('date', $selectedDate)
+                $subjects = Subject::whereIn('id', $subjectIds)
+                    ->orderBy('name')
                     ->get()
-                    ->keyBy('student_id');
+                    ->map(fn ($s) => [
+                        'id' => $s->id,
+                        'name' => $s->name,
+                        'code' => $s->code,
+                    ]);
 
-                $attendanceRecords = $students->map(function ($student) use ($existing) {
-                    $record = $existing->get($student['id']);
+                // If a subject is also selected, load students and their attendance
+                if ($selectedSubjectId && $subjectIds->contains($selectedSubjectId)) {
+                    $enrollments = Enrollment::with('student')
+                        ->where('section_id', $selectedSectionId)
+                        ->where('school_year_id', $activeSchoolYear->id)
+                        ->where('status', 'enrolled')
+                        ->get();
 
-                    return [
-                        'student_id' => $student['id'],
-                        'status' => $record?->status ?? 'present',
-                        'remarks' => $record?->remarks ?? '',
-                        'saved' => $record !== null,
-                    ];
-                })->keyBy('student_id')->toArray();
+                    $students = $enrollments->map(fn ($e) => [
+                        'id' => $e->student->id,
+                        'student_id' => $e->student->student_id,
+                        'full_name' => $e->student->full_name,
+                        'gender' => $e->student->gender,
+                    ])->sortBy('full_name')->values();
+
+                    // Load existing attendance for the selected date and subject
+                    $existing = Attendance::where('section_id', $selectedSectionId)
+                        ->where('subject_id', $selectedSubjectId)
+                        ->where('school_year_id', $activeSchoolYear->id)
+                        ->where('date', $selectedDate)
+                        ->get()
+                        ->keyBy('student_id');
+
+                    $attendanceRecords = $students->map(function ($student) use ($existing) {
+                        $record = $existing->get($student['id']);
+
+                        return [
+                            'student_id' => $student['id'],
+                            'status' => $record?->status ?? 'present',
+                            'remarks' => $record?->remarks ?? '',
+                            'saved' => $record !== null,
+                        ];
+                    })->keyBy('student_id')->toArray();
+                }
             }
         }
 
-        // Attendance summary for the selected section & month
+        // Attendance summary for the selected section, subject & month
         $monthlySummary = [];
         $datesWithAttendance = [];
-        if ($selectedSectionId && $activeSchoolYear) {
+        if ($selectedSectionId && $selectedSubjectId && $activeSchoolYear) {
             $monthStart = date('Y-m-01', strtotime($selectedDate));
             $monthEnd = date('Y-m-t', strtotime($selectedDate));
 
             $monthlySummary = Attendance::where('section_id', $selectedSectionId)
+                ->where('subject_id', $selectedSubjectId)
                 ->where('school_year_id', $activeSchoolYear->id)
                 ->whereBetween('date', [$monthStart, $monthEnd])
                 ->selectRaw('status, count(*) as count')
@@ -99,6 +121,7 @@ class AttendanceController extends Controller
 
             // Get distinct dates that have attendance records this month
             $datesWithAttendance = Attendance::where('section_id', $selectedSectionId)
+                ->where('subject_id', $selectedSubjectId)
                 ->where('school_year_id', $activeSchoolYear->id)
                 ->whereBetween('date', [$monthStart, $monthEnd])
                 ->distinct()
@@ -110,9 +133,11 @@ class AttendanceController extends Controller
 
         return Inertia::render('teacher/attendance/index', [
             'sections' => $sections,
+            'subjects' => $subjects,
             'students' => $students,
             'attendanceRecords' => $attendanceRecords,
             'selectedSectionId' => $selectedSectionId ? (int) $selectedSectionId : null,
+            'selectedSubjectId' => $selectedSubjectId ? (int) $selectedSubjectId : null,
             'selectedDate' => $selectedDate,
             'activeSchoolYear' => $activeSchoolYear?->name,
             'monthlySummary' => $monthlySummary,
@@ -127,6 +152,7 @@ class AttendanceController extends Controller
     {
         $request->validate([
             'section_id' => 'required|exists:sections,id',
+            'subject_id' => 'required|exists:subjects,id',
             'date' => 'required|date',
             'attendance' => 'required|array',
             'attendance.*.student_id' => 'required|exists:students,id',
@@ -141,14 +167,15 @@ class AttendanceController extends Controller
             return back()->with('error', 'No active school year.');
         }
 
-        // Verify teacher is assigned to this section
+        // Verify teacher is assigned to this section and subject
         $isAssigned = TeacherAssignment::where('teacher_id', $teacher->id)
             ->where('school_year_id', $activeSchoolYear->id)
             ->where('section_id', $request->section_id)
+            ->where('subject_id', $request->subject_id)
             ->exists();
 
         if (! $isAssigned) {
-            abort(403, 'You are not assigned to this section.');
+            abort(403, 'You are not assigned to this section and subject.');
         }
 
         foreach ($request->attendance as $entry) {
@@ -156,6 +183,7 @@ class AttendanceController extends Controller
                 [
                     'school_year_id' => $activeSchoolYear->id,
                     'section_id' => $request->section_id,
+                    'subject_id' => $request->subject_id,
                     'student_id' => $entry['student_id'],
                     'date' => $request->date,
                 ],

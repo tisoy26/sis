@@ -269,7 +269,8 @@ class ReportController extends Controller
         ];
 
         // --- Attendance ---
-        $attendanceRecords = Attendance::where('student_id', $studentId)
+        $attendanceRecords = Attendance::with('subject')
+            ->where('student_id', $studentId)
             ->where('section_id', $sectionId)
             ->where('school_year_id', $activeSchoolYear->id)
             ->orderBy('date', 'desc')

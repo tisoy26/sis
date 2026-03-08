@@ -13,11 +13,12 @@ import {
     Users,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import {
     Table,
     TableBody,
@@ -102,6 +103,7 @@ type PageProps = {
     genderDistribution?: ChartDataItem[];
     sectionEnrollments?: SectionEnrollment[];
     recentEnrollments?: RecentEnrollment[];
+    enrollmentTrend?: ChartDataItem[];
     teacherStats?: TeacherDashboardStats;
     sectionStudentCounts?: SectionStudentCount[];
 };
@@ -256,6 +258,7 @@ export default function Dashboard() {
         genderDistribution = [],
         sectionEnrollments = [],
         recentEnrollments = [],
+        enrollmentTrend = [],
         teacherStats,
         sectionStudentCounts = [],
     } = usePage<PageProps>().props;
@@ -293,7 +296,7 @@ export default function Dashboard() {
                 <Card>
                     <CardContent className="pt-6">
                         <h2 className="text-lg font-semibold">
-                            Welcome back, {user.first_name}!
+                            Welcome back, {user.full_name}!
                         </h2>
                         <p className="text-sm text-muted-foreground">
                             You are logged in as{' '}
@@ -534,45 +537,94 @@ export default function Dashboard() {
                             <DonutChart data={genderDistribution} title="Gender Distribution" />
                         </div>
 
-                        {/* Section Enrollment Breakdown */}
-                        {sectionEnrollments.length > 0 && (
+                        {/* Section Enrollment + Enrollment Trend */}
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            {/* Section Enrollment Overview */}
+                            {sectionEnrollments.length > 0 && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">Section Enrollment Overview</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="max-h-[400px] space-y-3 overflow-y-auto pr-2">
+                                            {sectionEnrollments.map((section, idx) => {
+                                                const maxCount = Math.max(...sectionEnrollments.map((s) => s.count), 1);
+                                                const percentage = (section.count / maxCount) * 100;
+                                                return (
+                                                    <div key={`${section.name}-${idx}`} className="space-y-1">
+                                                        <div className="flex items-center justify-between text-sm">
+                                                            <span className="font-medium">
+                                                                {section.name}
+                                                                {section.year_level && (
+                                                                    <span className="ml-1.5 text-xs text-muted-foreground font-normal">
+                                                                        — {section.year_level}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <span className="text-muted-foreground">
+                                                                {section.count} enrolled
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-2 w-full rounded-full bg-muted">
+                                                            <div
+                                                                className="h-2 rounded-full bg-primary transition-all"
+                                                                style={{ width: `${percentage}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Enrollment Trend per School Year */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Section Enrollment Overview</CardTitle>
+                                    <CardTitle className="text-base">Enrollment Trend per School Year</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="max-h-[400px] space-y-3 overflow-y-auto pr-2">
-                                        {sectionEnrollments.map((section, idx) => {
-                                            const maxCount = Math.max(...sectionEnrollments.map((s) => s.count), 1);
-                                            const percentage = (section.count / maxCount) * 100;
-                                            return (
-                                                <div key={`${section.name}-${idx}`} className="space-y-1">
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="font-medium">
-                                                            {section.name}
-                                                            {section.year_level && (
-                                                                <span className="ml-1.5 text-xs text-muted-foreground font-normal">
-                                                                    — {section.year_level}
-                                                                </span>
-                                                            )}
-                                                        </span>
-                                                        <span className="text-muted-foreground">
-                                                            {section.count} enrolled
-                                                        </span>
-                                                    </div>
-                                                    <div className="h-2 w-full rounded-full bg-muted">
-                                                        <div
-                                                            className="h-2 rounded-full bg-primary transition-all"
-                                                            style={{ width: `${percentage}%` }}
+                                    {enrollmentTrend.length === 0 ? (
+                                        <div className="flex h-[250px] items-center justify-center">
+                                            <p className="text-sm text-muted-foreground">No data available</p>
+                                        </div>
+                                    ) : (
+                                        <ChartContainer
+                                            config={{
+                                                value: { label: 'Students', color: 'var(--primary)' },
+                                            } satisfies ChartConfig}
+                                            className="h-[350px] w-full"
+                                        >
+                                            <BarChart data={enrollmentTrend} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                                                <CartesianGrid vertical={false} />
+                                                <XAxis
+                                                    dataKey="name"
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    tickMargin={8}
+                                                />
+                                                <YAxis
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    allowDecimals={false}
+                                                />
+                                                <ChartTooltip content={<ChartTooltipContent />} />
+                                                <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={50}>
+                                                    {enrollmentTrend.map((_, index) => (
+                                                        <Cell
+                                                            key={`bar-${index}`}
+                                                            fill={index === enrollmentTrend.length - 1 ? 'var(--color-value)' : 'var(--color-value)'}
+                                                            fillOpacity={index === enrollmentTrend.length - 1 ? 1 : 0.5}
                                                         />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ChartContainer>
+                                    )}
                                 </CardContent>
                             </Card>
-                        )}
+                        </div>
 
                         {/* Recent Enrollments */}
                         <Card>

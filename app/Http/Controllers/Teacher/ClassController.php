@@ -190,7 +190,8 @@ class ClassController extends Controller
         ];
 
         // --- Attendance Summary ---
-        $attendanceRecords = Attendance::where('student_id', $student->id)
+        $attendanceRecords = Attendance::with('subject')
+            ->where('student_id', $student->id)
             ->where('section_id', $sectionId)
             ->where('school_year_id', $activeSchoolYear->id)
             ->orderBy('date', 'desc')
@@ -200,6 +201,7 @@ class ClassController extends Controller
                 'date' => $a->date->toDateString(),
                 'status' => $a->status,
                 'remarks' => $a->remarks,
+                'subject_name' => $a->subject?->name ?? '—',
             ]);
 
         $attendanceSummary = [
