@@ -86,7 +86,8 @@ class StudentReportPdf extends FPDF
         $this->infoRow('Last Name', $student['last_name'], 'First Name', $student['first_name'], $col);
         $this->infoRow('Middle Name', $student['middle_name'] ?? '---', 'Gender', ucfirst($student['gender']), $col);
         $this->infoRow('Birth Date', $this->formatDate($student['birth_date']), 'Contact', $student['contact_number'] ?? '---', $col);
-        $this->infoRow('Status', ucfirst($student['status']), 'Date Enrolled', $this->formatDate($student['enrolled_at']), $col);
+        $this->infoRow('Email', $student['email'] ?? '---', 'Date Enrolled', $this->formatDate($student['enrolled_at']), $col);
+        $this->infoRow('Status', ucfirst($student['status']), '', '', $col);
 
         $this->Ln(4);
     }

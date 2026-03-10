@@ -107,6 +107,7 @@ class ClassController extends Controller
                 'last_name' => $student->last_name,
                 'gender' => $student->gender,
                 'contact_number' => $student->contact_number,
+                'email' => $student->email,
                 'status' => $enrollment->status,
                 'enrolled_at' => $enrollment->enrolled_at?->toDateString(),
             ];
@@ -185,6 +186,7 @@ class ClassController extends Controller
             'gender' => $student->gender,
             'birth_date' => $student->birth_date?->toDateString(),
             'contact_number' => $student->contact_number,
+            'email' => $student->email,
             'status' => $enrollment->status,
             'enrolled_at' => $enrollment->enrolled_at?->toDateString(),
         ];

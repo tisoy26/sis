@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -24,6 +25,7 @@ class User extends Authenticatable
         'username',
         'password',
         'type',
+        'student_id',
     ];
 
     /**
@@ -56,6 +58,16 @@ class User extends Authenticatable
     public function isTeacher(): bool
     {
         return $this->type === 'teacher';
+    }
+
+    public function isStudent(): bool
+    {
+        return $this->type === 'student';
+    }
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class);
     }
 
     /**

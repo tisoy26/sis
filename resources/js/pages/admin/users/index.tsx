@@ -59,7 +59,7 @@ export default function UserIndex() {
             first_name: user.first_name,
             last_name: user.last_name,
             username: user.username,
-            type: user.type,
+            type: user.type as 'admin' | 'staff' | 'teacher',
             password: '',
             password_confirmation: '',
         });

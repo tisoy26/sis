@@ -20,6 +20,7 @@ class Student extends Model
         'gender',
         'birth_date',
         'contact_number',
+        'email',
         'status',
     ];
 
@@ -73,6 +74,11 @@ class Student extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class);
     }
 
     public function isActive(): bool

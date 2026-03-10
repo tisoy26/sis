@@ -15,6 +15,7 @@ interface StudentItem {
     last_name: string;
     gender: string;
     contact_number: string | null;
+    email: string | null;
     status: string;
     enrolled_at: string | null;
 }

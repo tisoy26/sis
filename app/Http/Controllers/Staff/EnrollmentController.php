@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EnrollmentRequest;
+use App\Mail\StudentEnrolledMail;
 use App\Models\Enrollment;
 use App\Models\SchoolYear;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\YearLevel;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -81,6 +83,12 @@ class EnrollmentController extends Controller
 
         // Auto-activate student on enrollment
         $enrollment->student()->update(['status' => 'active']);
+
+        // Send enrollment confirmation email if student has an email
+        $student = $enrollment->student;
+        if ($student->email) {
+            Mail::to($student->email)->send(new StudentEnrolledMail($enrollment));
+        }
 
         return back()->with('success', 'Student enrolled successfully.');
     }

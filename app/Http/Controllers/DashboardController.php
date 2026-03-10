@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Attendance;
 use App\Models\Enrollment;
+use App\Models\Grade;
+use App\Models\GradeItem;
+use App\Models\GradeScore;
 use App\Models\SchoolYear;
 use App\Models\Section;
 use App\Models\Student;
@@ -217,6 +221,151 @@ class DashboardController extends Controller
             ];
         }
 
-        return Inertia::render('dashboard', $data);
+        if ($user->type === 'student') {
+            $student = $user->student;
+            $activeSchoolYear = SchoolYear::where('status', 'active')->first();
+
+            // Current enrollment
+            $currentEnrollment = null;
+            if ($student && $activeSchoolYear) {
+                $currentEnrollment = Enrollment::with(['section.yearLevel', 'schoolYear'])
+                    ->where('student_id', $student->id)
+                    ->where('school_year_id', $activeSchoolYear->id)
+                    ->where('status', 'enrolled')
+                    ->first();
+            }
+
+            // Subjects in current section
+            $subjects = [];
+            if ($currentEnrollment) {
+                $subjects = TeacherAssignment::with('subject')
+                    ->where('section_id', $currentEnrollment->section_id)
+                    ->where('school_year_id', $activeSchoolYear->id)
+                    ->get()
+                    ->pluck('subject')
+                    ->unique('id')
+                    ->map(fn ($s) => [
+                        'id' => $s->id,
+                        'code' => $s->code,
+                        'name' => $s->name,
+                    ])
+                    ->values();
+            }
+
+            // Attendance summary
+            $attendanceSummary = [];
+            if ($student && $activeSchoolYear) {
+                $attendanceSummary = Attendance::where('student_id', $student->id)
+                    ->where('school_year_id', $activeSchoolYear->id)
+                    ->select('status', DB::raw('count(*) as count'))
+                    ->groupBy('status')
+                    ->pluck('count', 'status')
+                    ->toArray();
+            }
+
+            // Quarterly grades per subject
+            $quarterlyGrades = [];
+            if ($student && $currentEnrollment && $activeSchoolYear) {
+                $gradeItems = GradeItem::where('school_year_id', $activeSchoolYear->id)
+                    ->where('section_id', $currentEnrollment->section_id)
+                    ->with(['scores' => fn ($q) => $q->where('student_id', $student->id)])
+                    ->get();
+
+                foreach ($subjects as $subject) {
+                    $subjectGrades = [];
+                    foreach ([1, 2, 3, 4] as $quarter) {
+                        $items = $gradeItems->where('subject_id', $subject['id'])->where('quarter', $quarter);
+
+                        if ($items->isEmpty()) {
+                            $subjectGrades[$quarter] = null;
+                            continue;
+                        }
+
+                        $grouped = $items->groupBy('type');
+                        $subjectCode = $subject['code'];
+                        $weights = Grade::getWeights($subjectCode);
+
+                        $percentages = ['WW' => 0.0, 'PT' => 0.0, 'QA' => 0.0];
+                        $hasAllTypes = true;
+
+                        foreach (['WW', 'PT', 'QA'] as $type) {
+                            $typeItems = $grouped->get($type, collect());
+                            if ($typeItems->isEmpty()) {
+                                $hasAllTypes = false;
+                                continue;
+                            }
+
+                            $totalScore = 0;
+                            $totalMax = 0;
+                            foreach ($typeItems as $item) {
+                                $score = $item->scores->first();
+                                if ($score) {
+                                    $totalScore += $score->score;
+                                    $totalMax += $item->max_score;
+                                }
+                            }
+
+                            $percentages[$type] = $totalMax > 0 ? ($totalScore / $totalMax) * 100 : 0;
+                        }
+
+                        if (! $hasAllTypes) {
+                            $subjectGrades[$quarter] = null;
+                            continue;
+                        }
+
+                        $initialGrade = Grade::computeInitialGrade($percentages['WW'], $percentages['PT'], $percentages['QA'], $weights);
+                        $subjectGrades[$quarter] = Grade::transmute($initialGrade);
+                    }
+
+                    $quarterlyGrades[] = [
+                        'subject_code' => $subject['code'],
+                        'subject_name' => $subject['name'],
+                        'grades' => $subjectGrades,
+                    ];
+                }
+            }
+
+            // Enrollment history
+            $enrollmentHistory = [];
+            if ($student) {
+                $enrollmentHistory = Enrollment::with(['section.yearLevel', 'schoolYear'])
+                    ->where('student_id', $student->id)
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(fn ($e) => [
+                        'id' => $e->id,
+                        'school_year' => $e->schoolYear->name,
+                        'year_level' => $e->section->yearLevel?->name,
+                        'section' => $e->section->name,
+                        'status' => $e->status,
+                    ]);
+            }
+
+            $data = [
+                'studentInfo' => $student ? [
+                    'student_id' => $student->student_id,
+                    'full_name' => $student->full_name,
+                    'gender' => $student->gender,
+                    'status' => $student->status,
+                ] : null,
+                'currentEnrollment' => $currentEnrollment ? [
+                    'school_year' => $currentEnrollment->schoolYear->name,
+                    'year_level' => $currentEnrollment->section->yearLevel?->name,
+                    'section' => $currentEnrollment->section->name,
+                    'status' => $currentEnrollment->status,
+                ] : null,
+                'subjects' => $subjects,
+                'attendanceSummary' => [
+                    'present' => $attendanceSummary['present'] ?? 0,
+                    'absent' => $attendanceSummary['absent'] ?? 0,
+                    'late' => $attendanceSummary['late'] ?? 0,
+                    'excused' => $attendanceSummary['excused'] ?? 0,
+                ],
+                'quarterlyGrades' => $quarterlyGrades,
+                'enrollmentHistory' => $enrollmentHistory,
+            ];
+        }
+
+        return Inertia::render("{$user->type}/dashboard", $data);
     }
 }

@@ -43,6 +43,7 @@ class DatabaseSeeder extends Seeder
             SchoolYearSeeder::class,
             TeacherSeeder::class,
             TeacherAssignmentSeeder::class,
+            ScheduleSeeder::class,
             StudentSeeder::class,
         ]);
     }

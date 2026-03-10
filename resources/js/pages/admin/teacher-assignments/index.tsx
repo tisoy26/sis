@@ -266,7 +266,7 @@ export default function TeacherAssignmentIndex() {
                                 <SelectContent>
                                     {sections.map((s) => (
                                         <SelectItem key={s.id} value={String(s.id)}>
-                                            {s.name}
+                                            {s.name}{s.year_level_name ? ` — ${s.year_level_name}` : ''}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

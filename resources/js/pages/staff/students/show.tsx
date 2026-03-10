@@ -135,6 +135,7 @@ export default function StudentShow() {
                                     <InfoRow label="Gender" value={<span className="capitalize">{student.gender}</span>} />
                                     <InfoRow label="Birth Date" value={new Date(student.birth_date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })} />
                                     <InfoRow label="Contact Number" value={student.contact_number} />
+                                    <InfoRow label="Email" value={student.email} />
                                     <InfoRow label="Status" value={<Badge variant={statusColors[student.status] ?? 'default'} className="capitalize">{student.status}</Badge>} />
                                 </CardContent>
                             </Card>

@@ -4,7 +4,7 @@ export type User = {
     last_name: string;
     full_name: string;
     username: string;
-    type: 'admin' | 'staff' | 'teacher';
+    type: 'admin' | 'staff' | 'teacher' | 'student';
     avatar?: string;
     two_factor_enabled?: boolean;
     created_at: string;

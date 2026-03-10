@@ -29,6 +29,12 @@ class StudentRequest extends FormRequest
             'gender' => ['required', Rule::in(['male', 'female'])],
             'birth_date' => ['required', 'date'],
             'contact_number' => ['nullable', 'string', 'max:20'],
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('students', 'email')->ignore($studentId),
+            ],
             'status' => ['required', Rule::in(['active', 'inactive', 'graduated', 'transferred'])],
 
             // Address fields

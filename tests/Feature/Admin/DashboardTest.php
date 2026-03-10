@@ -9,7 +9,7 @@ test('admin can access the dashboard', function () {
     $this->actingAs($admin)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('dashboard'));
+        ->assertInertia(fn (Assert $page) => $page->component('admin/dashboard'));
 });
 
 test('staff cannot access admin dashboard', function () {

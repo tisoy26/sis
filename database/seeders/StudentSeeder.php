@@ -106,6 +106,9 @@ class StudentSeeder extends Seeder
                     'gender' => $gender,
                     'birth_date' => sprintf('%d-%02d-%02d', $birthYear, rand(1, 12), rand(1, 28)),
                     'contact_number' => '09' . rand(100000000, 999999999),
+                    'email' => in_array($category, ['junior_high', 'senior_high']) && rand(1, 100) <= 70
+                        ? strtolower($firstName) . '.' . strtolower(str_replace(' ', '', $lastName)) . $counter . '@example.com'
+                        : null,
                     'status' => 'active',
                 ]);
 

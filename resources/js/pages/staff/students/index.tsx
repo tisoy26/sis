@@ -69,6 +69,7 @@ export default function StudentIndex() {
         gender: 'male' as 'male' | 'female',
         birth_date: '',
         contact_number: '',
+        email: '',
         status: 'inactive' as string,
         ...emptyAddress,
         // Parent / Guardian
@@ -160,6 +161,7 @@ export default function StudentIndex() {
             gender: student.gender,
             birth_date: student.birth_date.split('T')[0],
             contact_number: student.contact_number ?? '',
+            email: student.email ?? '',
             status: student.status,
             region_code: addr?.region_code ?? '',
             region_name: addr?.region_name ?? '',
@@ -449,6 +451,19 @@ export default function StudentIndex() {
                                                 onChange={(e) => form.setData('contact_number', e.target.value)}
                                             />
                                         </div>
+                                    </div>
+
+                                    {/* Row 4: Email (full width) */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Email</Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            value={form.data.email}
+                                            onChange={(e) => form.setData('email', e.target.value)}
+                                            placeholder="student@example.com"
+                                        />
+                                        {form.errors.email && <p className="text-xs text-destructive">{form.errors.email}</p>}
                                     </div>
 
                                     {/* Address (cascading PH picker) */}

@@ -55,6 +55,7 @@ export type Student = {
     gender: 'male' | 'female';
     birth_date: string;
     contact_number: string | null;
+    email: string | null;
     status: 'active' | 'inactive' | 'graduated' | 'transferred';
     document_complete: boolean;
     address: StudentAddress | null;

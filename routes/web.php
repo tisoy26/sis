@@ -1,19 +1,23 @@
 <?php
 
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\SchoolYearController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\Staff\EnrollmentController;
 use App\Http\Controllers\Staff\ReportController;
 use App\Http\Controllers\Staff\SectionViewController;
 use App\Http\Controllers\Staff\StudentController;
+use App\Http\Controllers\StudentSetupController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\Teacher\AttendanceController as TeacherAttendanceController;
 use App\Http\Controllers\Teacher\ClassController as TeacherClassController;
 use App\Http\Controllers\Teacher\GradeController as TeacherGradeController;
 use App\Http\Controllers\Teacher\ReportController as TeacherReportController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TeacherAssignmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\YearLevelController;
@@ -25,6 +29,10 @@ use Illuminate\Support\Facades\Route;
 Route::inertia('/', 'auth/login')
     ->middleware(RedirectToDashboard::class)
     ->name('home');
+
+// Student account setup (signed URL, no auth required)
+Route::get('student-setup/{student}', [StudentSetupController::class, 'show'])->name('student.setup');
+Route::post('student-setup/{student}', [StudentSetupController::class, 'store'])->name('student.setup.store');
 
 // Authenticated routes
 Route::middleware(['auth'])->group(function () {
@@ -40,6 +48,10 @@ Route::middleware(['auth'])->group(function () {
             Route::resource('subjects', SubjectController::class)->only(['index', 'store', 'update', 'destroy']);
             Route::resource('year-levels', YearLevelController::class)->only(['index', 'store', 'update', 'destroy']);
             Route::resource('teacher-assignments', TeacherAssignmentController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::resource('schedules', ScheduleController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::resource('announcements', AnnouncementController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::resource('events', EventController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::delete('events/{event}/images/{image}', [EventController::class, 'destroyImage'])->name('events.images.destroy');
             Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
             Route::get('settings', [SystemSettingController::class, 'index'])->name('settings.index');
             Route::put('settings', [SystemSettingController::class, 'update'])->name('settings.update');
@@ -61,6 +73,18 @@ Route::middleware(['auth'])->group(function () {
             Route::get('reports/students', [ReportController::class, 'studentList'])->name('reports.students');
             Route::get('reports/enrollment', [ReportController::class, 'enrollmentReport'])->name('reports.enrollment');
             Route::get('reports/sections', [ReportController::class, 'sectionSummary'])->name('reports.sections');
+        });
+
+    // Student routes
+    Route::middleware(CheckRole::class . ':student')
+        ->prefix('student')
+        ->name('student.')
+        ->group(function () {
+            Route::get('dashboard', DashboardController::class)->name('dashboard');
+            Route::get('announcements', [\App\Http\Controllers\Student\AnnouncementController::class, 'index'])->name('announcements.index');
+            Route::get('events', [\App\Http\Controllers\Student\EventController::class, 'index'])->name('events.index');
+            Route::get('subjects/{subject}', [\App\Http\Controllers\Student\SubjectController::class, 'show'])->name('subjects.show');
+            Route::get('schedule', [\App\Http\Controllers\Student\ScheduleController::class, 'index'])->name('schedule.index');
         });
 
     // Teacher routes

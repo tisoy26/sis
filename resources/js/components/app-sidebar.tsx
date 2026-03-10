@@ -2,11 +2,14 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
     CalendarCheck,
+    CalendarClock,
     ChevronLeft,
     ClipboardList,
     GraduationCap,
     Layers,
     LayoutDashboard,
+    Megaphone,
+    PartyPopper,
     ScrollText,
     Settings,
     ShieldCheck,
@@ -55,6 +58,14 @@ const adminNav: NavGroup[] = [
         label: 'Academic',
         items: [
             { title: 'Teacher Assignments', href: '/admin/teacher-assignments', icon: UserCheck },
+            { title: 'Schedules', href: '/admin/schedules', icon: CalendarClock },
+        ],
+    },
+    {
+        label: 'Content',
+        items: [
+            { title: 'Announcements', href: '/admin/announcements', icon: Megaphone },
+            { title: 'Events', href: '/admin/events', icon: PartyPopper },
         ],
     },
     {
@@ -85,6 +96,15 @@ const staffNav: NavGroup[] = [
         label: 'Reports',
         items: [
             { title: 'Reports', href: '/staff/reports', icon: ClipboardList },
+        ],
+    },
+];
+
+const studentNav: NavGroup[] = [
+    {
+        label: 'General',
+        items: [
+            { title: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
         ],
     },
 ];
@@ -120,6 +140,8 @@ function getNavGroups(type: string): NavGroup[] {
             return staffNav;
         case 'teacher':
             return teacherNav;
+        case 'student':
+            return studentNav;
         default:
             return [];
     }
@@ -133,6 +155,8 @@ function getRoleLabel(type: string): string {
             return 'Registrar / Staff';
         case 'teacher':
             return 'Teacher';
+        case 'student':
+            return 'Student Portal';
         default:
             return 'Navigation';
     }

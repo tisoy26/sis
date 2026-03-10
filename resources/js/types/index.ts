@@ -1,7 +1,10 @@
+export type * from './announcement';
 export type * from './audit-log';
 export type * from './auth';
 export type * from './enrollment';
+export type * from './event';
 export type * from './navigation';
+export type * from './schedule';
 export type * from './school-year';
 export type * from './section';
 export type * from './student';

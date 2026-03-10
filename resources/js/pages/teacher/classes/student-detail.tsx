@@ -38,6 +38,7 @@ interface StudentData {
     gender: string;
     birth_date: string | null;
     contact_number: string | null;
+    email: string | null;
     status: string;
     enrolled_at: string | null;
 }
@@ -239,6 +240,10 @@ export default function TeacherClassStudentDetail() {
                                         <div>
                                             <p className="text-xs text-muted-foreground">Contact Number</p>
                                             <p className="font-medium">{student.contact_number || '—'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Email</p>
+                                            <p className="font-medium">{student.email || '—'}</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-muted-foreground">Enrollment Status</p>
